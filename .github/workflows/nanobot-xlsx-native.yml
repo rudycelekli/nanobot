@@ -1,0 +1,138 @@
+name: Immutable nanobot XLSX cell locator qualification
+on:
+  push:
+    branches: [qualification/xlsx-cell-locators-native-20261013]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native:
+    if: github.repository == 'rudycelekli/nanobot' && !github.event.repository.private && github.event.repository.fork == true
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: Linux311
+            phase: baseline
+            os: ubuntu-latest
+            python: "3.11"
+            head: db804ef94a71cf996b5b1f29f24cfdbeabf02d42
+          - lane: Linux311
+            phase: fixed
+            os: ubuntu-latest
+            python: "3.11"
+            head: 95a85afe228476484003fa28c4cfe97909bda597
+          - lane: Linux314
+            phase: baseline
+            os: ubuntu-latest
+            python: "3.14"
+            head: db804ef94a71cf996b5b1f29f24cfdbeabf02d42
+          - lane: Linux314
+            phase: fixed
+            os: ubuntu-latest
+            python: "3.14"
+            head: 95a85afe228476484003fa28c4cfe97909bda597
+          - lane: Windows314
+            phase: baseline
+            os: windows-latest
+            python: "3.14"
+            head: db804ef94a71cf996b5b1f29f24cfdbeabf02d42
+          - lane: Windows314
+            phase: fixed
+            os: windows-latest
+            python: "3.14"
+            head: 95a85afe228476484003fa28c4cfe97909bda597
+          - lane: WindowsProcess
+            phase: baseline
+            os: windows-latest
+            python: "3.14"
+            head: db804ef94a71cf996b5b1f29f24cfdbeabf02d42
+          - lane: WindowsProcess
+            phase: fixed
+            os: windows-latest
+            python: "3.14"
+            head: 95a85afe228476484003fa28c4cfe97909bda597
+          - lane: Docker
+            phase: baseline
+            os: ubuntu-latest
+            python: "3.14"
+            head: db804ef94a71cf996b5b1f29f24cfdbeabf02d42
+          - lane: Docker
+            phase: fixed
+            os: ubuntu-latest
+            python: "3.14"
+            head: 95a85afe228476484003fa28c4cfe97909bda597
+    steps:
+      - name: Preserve exact checkout bytes
+        shell: bash
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: harness
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ matrix.head }}
+          path: source
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a
+        if: matrix.lane != 'Docker'
+        with:
+          enable-cache: false
+      - name: Native qualification (Linux)
+        if: runner.os == 'Linux'
+        run: python harness/qualification/native.py '${{ matrix.phase }}' '${{ matrix.lane }}' source 'proof/${{ matrix.lane }}-${{ matrix.phase }}'
+      - name: Native qualification (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: python harness/qualification/native.py '${{ matrix.phase }}' '${{ matrix.lane }}' source 'proof/${{ matrix.lane }}-${{ matrix.phase }}'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: nanobot-${{ matrix.lane }}-${{ matrix.phase }}
+          path: proof/${{ matrix.lane }}-${{ matrix.phase }}/
+          retention-days: 1
+          compression-level: 9
+          if-no-files-found: error
+  compare:
+    needs: native
+    if: always() && github.repository == 'rudycelekli/nanobot' && !github.event.repository.private && github.event.repository.fork == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.14'
+      - name: Evaluator controls
+        run: python -m unittest discover -s qualification -p 'test_compare.py' -v > evaluator-controls.log 2>&1
+      - name: Download raw native evidence
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download '${{ github.run_id }}' --repo '${{ github.repository }}' --dir artifacts
+      - name: Compare pristine original outcomes and real regressions
+        if: always()
+        run: python qualification/compare.py artifacts comparison.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: nanobot-xlsx-comparison
+          path: |
+            comparison.json
+            evaluator-controls.log
+          retention-days: 1
+          compression-level: 9
+          if-no-files-found: error

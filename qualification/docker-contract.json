@@ -1,0 +1,27 @@
+{
+  "docker-build": [
+    "docker",
+    "build",
+    "-t",
+    "nanobot:test",
+    "."
+  ],
+  "docker-compose-verify": [
+    "bash",
+    "{harness}/docker-compose-verify.sh"
+  ],
+  "docker-whatsapp": [
+    "docker",
+    "run",
+    "--rm",
+    "--entrypoint",
+    "python",
+    "nanobot:test",
+    "-c",
+    "import neonize, segno"
+  ],
+  "docker-permissions": [
+    "bash",
+    "{harness}/docker-permissions.sh"
+  ]
+}
