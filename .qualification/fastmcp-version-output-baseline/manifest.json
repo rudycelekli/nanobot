@@ -1,0 +1,23 @@
+{
+  "base": "e2fcc412001ff7414095c5dc282f94c70299a612",
+  "baseTree": "7a3a2cc6044255e42db5759e8243e5f592d4ab65",
+  "testSHA256": "dc5c21c76d21aaec5326e9e2fe058fca070135158dee767f306747f90533a8c9",
+  "hypothesesOnlyBeforeNative": true,
+  "expectedCases": {
+    "test_version_output.py::test_pinned_tool_output[same-types-auto]": "passed",
+    "test_version_output.py::test_pinned_tool_output[same-types-legacy]": "passed",
+    "test_version_output.py::test_pinned_tool_output[different-types-auto]": "failed",
+    "test_version_output.py::test_pinned_tool_output[different-types-legacy]": "failed",
+    "test_version_output.py::test_pinned_tool_output[compatible-schema-auto]": "failed",
+    "test_version_output.py::test_pinned_tool_output[compatible-schema-legacy]": "failed",
+    "test_version_output.py::test_pinned_tool_output[highest-default-auto]": "passed",
+    "test_version_output.py::test_pinned_tool_output[highest-default-legacy]": "passed",
+    "test_version_output.py::test_pinned_tool_output[highest-explicit-auto]": "passed",
+    "test_version_output.py::test_pinned_tool_output[highest-explicit-legacy]": "passed",
+    "test_version_output.py::test_pinned_tool_output[metadata-pin-auto]": "failed",
+    "test_version_output.py::test_pinned_tool_output[metadata-pin-legacy]": "failed"
+  },
+  "harnessRepository": "rudycelekli/nanobot",
+  "harnessParent": "95a85afe228476484003fa28c4cfe97909bda597",
+  "qualificationOnlyNoFastMCPCommit": true
+}
